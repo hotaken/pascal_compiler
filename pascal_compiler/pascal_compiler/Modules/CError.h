@@ -11,6 +11,9 @@ enum class ErrorCode {
 	UnknownSymbol,
 	InvalidNumber,
 	IntegerLimit,
+	UnexpectedToken,
+	ExpectedToken,
+	UnexpectedConstType
 };
 
 
@@ -30,5 +33,8 @@ const map<ErrorCode, string> errorMessage = {
 	{ErrorCode::UnexpectedSymbol, "UnexpectedSymbol"},
 	{ErrorCode::UnknownSymbol, "UnknownSymbol"},
 	{ErrorCode::InvalidNumber, "InvalidNumber"},
-	{ErrorCode::IntegerLimit, "IntegerLimit"}
+	{ErrorCode::IntegerLimit, "IntegerLimit"},
+	{ErrorCode::UnexpectedToken, "UnexpectedToken"},
+	{ErrorCode::ExpectedToken, "ExpectedToken"},
+	{ErrorCode::UnexpectedConstType, "UnexpectedConstType"}
 };

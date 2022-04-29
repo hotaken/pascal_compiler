@@ -37,6 +37,7 @@ private:
 public:
 	CIdentToken(string name, int line, int index);
 	string toString() override;
+	string getName();
 };
 
 class CKeyWordToken : public CToken {
@@ -45,6 +46,7 @@ private:
 public:
 	CKeyWordToken(CKeyWords name, int line, int index);
 	string toString() override;
+	CKeyWords getKeyWord();
 };
 
 class CConstToken : public CToken {
@@ -53,4 +55,5 @@ private:
 public:
 	CConstToken(CVariant* value, int line, int index);
 	string toString() override;
+	const std::unique_ptr<CVariant>& getVariant() const;
 };

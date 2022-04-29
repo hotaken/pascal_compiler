@@ -2,8 +2,9 @@
 #include<iostream>
 #include "Modules/IO/io.h"
 #include "Modules/CLexer/CLexer.h"
+#include "Modules/CParser/CParser.h"
 
-#define FILE_NAME "tests/1.pas"
+#define FILE_NAME "tests/parser_witherr.pas"
 
 
 int main(char argc, char** argv) {
@@ -12,20 +13,8 @@ int main(char argc, char** argv) {
 	unique_ptr<Reader> reader = make_unique<Reader>(inputFstream);
 	unique_ptr<Writer> writer = make_unique<Writer>(cout);
 	unique_ptr<CLexer> cLexer = make_unique<CLexer>(reader.release());
-
-
-	while (true) {
-		try {
-			unique_ptr<CToken> token = cLexer->getNextToken();
-			if (token == nullptr) break;
-			auto [line, index] = token->getPos();
-			writer->stream << line << ":" << index << " " << token->toString() << endl;
-		}
-		catch (exception& e) {
-			writer->stream << "Error: " << e.what() << endl;
-		}
-		
-	}
+	unique_ptr<CParser> cParser = make_unique<CParser>(cLexer.release(), writer.release());
+	cParser->parse();
 
 	inputFstream.close();
 }

@@ -143,6 +143,8 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Modules\CError.cpp" />
     <ClCompile Include="Modules\CLexer\CLexer.cpp" />
+    <ClCompile Include="Modules\CParser\CParser.cpp" />
+    <ClCompile Include="Modules\CParser\Neutralization.cpp" />
     <ClCompile Include="Modules\CVariant.cpp" />
     <ClCompile Include="Modules\IO\io.cpp" />
     <ClCompile Include="Modules\CToken.cpp" />
@@ -151,6 +153,7 @@
   <ItemGroup>
     <ClInclude Include="Modules\CError.h" />
     <ClInclude Include="Modules\CLexer\CLexer.h" />
+    <ClInclude Include="Modules\CParser\CParser.h" />
     <ClInclude Include="Modules\CVariant.h" />
     <ClInclude Include="Modules\IO\io.h" />
     <ClInclude Include="Modules\CToken.h" />
@@ -159,6 +162,8 @@
   <ItemGroup>
     <None Include="tests\1.pas" />
     <None Include="tests\lexer_errors.pas" />
+    <None Include="tests\parser_noerr.pas" />
+    <None Include="tests\parser_witherr.pas" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

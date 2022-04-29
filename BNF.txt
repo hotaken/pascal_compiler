@@ -1,0 +1,33 @@
+<program> ::= program <identifier>;<block>.|<block>.
+<block> ::= <varPart> <statementPart>
+
+<varPart>::= <empty> | var <varDeclaration>; {<varDeclaration>;}
+<varDeclaration> ::= <identifier> {,<identifier>} : <type>
+<type> ::= <identifier>
+
+<empty> ::=
+
+<statementPart> ::= <compoundStatement>
+<compoundStatement> ::= begin <empty> | <statement>{;<statement>} end
+<statement> ::= <simpleStatement>|<structuredStatement>
+<simpleStatement> ::= <variable> := <expression>
+<variable> ::= <identifier>
+
+<expression> ::= <simpleExpression>|<simpleExpression> <relationalOperator> <simpleExpression>
+<relationalOperator> ::= <|>|>=|<=|=|<>
+
+<simpleExpression> ::= <term>{<addingOperator><term>}
+<addingOperator> ::= + | - | or
+
+<term> ::= <factor>{<multiplyingOperator><factor>}
+<multiplyingOperator> ::= * | / | and
+
+<factor> ::= <variable> | <unsignedConst> | (<expression>) | <unaryOperator><factor>
+<unaryOperator> ::= + | - | not
+
+<unsignedConst> ::= <unsignedNumber> | <stringConst>
+<unsignedNumber> ::= <unsignedInteger> | <unsignedReal>
+
+<structuredStatement> ::= <compoundStatement>|<ifStatement>|<whileStatement>
+<ifStatement> ::= if <expression> then <statement>| if<expression> then <statement> else <statement>
+<whileStatement> ::= while <expression> do <statement>

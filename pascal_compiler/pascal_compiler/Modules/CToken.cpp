@@ -22,6 +22,9 @@ CIdentToken::CIdentToken(string name, int line, int index) : CToken(TokenType::t
 string CIdentToken::toString() {
 	return name + " " + tokenTypeToString.at(getType());
 }
+string CIdentToken::getName() {
+	return name;
+}
 
 
 
@@ -30,6 +33,10 @@ CKeyWordToken::CKeyWordToken(CKeyWords name, int line, int index) : CToken(Token
 
 string CKeyWordToken::toString() {
 	return keyWordsToString.at(name) + " " + tokenTypeToString.at(getType());
+}
+
+CKeyWords CKeyWordToken::getKeyWord() {
+	return name;
 }
 
 
@@ -41,4 +48,8 @@ CConstToken::CConstToken(CVariant* value, int line, int index) : CToken(TokenTyp
 
 string CConstToken::toString() {
 	return "\"" + value->toString() + "\"" + " " + variantTypeToString.at(value->getVariantType()) + " " + tokenTypeToString.at(getType());
+}
+
+const std::unique_ptr<CVariant>& CConstToken::getVariant() const {
+	return value;
 }
