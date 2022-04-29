@@ -4,7 +4,7 @@
 #include "Modules/CLexer/CLexer.h"
 #include "Modules/CParser/CParser.h"
 
-#define FILE_NAME "tests/parser_witherr.pas"
+#define FILE_NAME "tests/parser_noerr.pas"
 
 
 int main(char argc, char** argv) {

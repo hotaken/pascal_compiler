@@ -37,6 +37,7 @@ enum class CKeyWords {
 	notSy, // not 
 	startCommentSy, // {
 	endCommentSy, // }
+	typeSy,
 
 };
 
@@ -71,6 +72,7 @@ const map<string, CKeyWords> stringToKeyWords = {
 	{"or", CKeyWords::orSy},
 	{"xor", CKeyWords::xorSy},
 	{"not", CKeyWords::notSy},
+	{"type", CKeyWords::typeSy}
 	
 };
 
@@ -105,6 +107,7 @@ const map<CKeyWords, string> keyWordsToString = {
 	{CKeyWords::orSy, "or"},
 	{CKeyWords::xorSy, "xor"},
 	{CKeyWords::notSy, "not"},
+	{CKeyWords::typeSy, "type"}
 };
 
 bool isKeyWord(string);

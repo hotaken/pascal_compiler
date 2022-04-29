@@ -88,6 +88,9 @@ void CParser::program() {
 
 
 void CParser::block() {
+	if (isKeyWord() && getTokenKeyWord() == CKeyWords::typeSy) {
+		typePart();
+	}
 	if (isKeyWord() && getTokenKeyWord() == CKeyWords::varSy) {
 		varPart();
 	}
@@ -96,6 +99,27 @@ void CParser::block() {
 void CParser::type() {
 	passIdent();
 }
+
+void CParser::typePart() {
+	try {
+		passKeyword(CKeyWords::typeSy);
+		while (isIdent()) {
+			typeDeclaration();
+			passKeyword(CKeyWords::semicolonSy);
+		}
+	}
+	catch (CError& e) {
+		writer->stream << "Error: " << e.what() << endl;
+		skipTo(false, false, { CKeyWords::varSy, CKeyWords::beginSy });
+	}
+}
+
+void CParser::typeDeclaration() {
+	passIdent();
+	passKeyword(CKeyWords::eqSy);
+	type();
+}
+
 
 void CParser::varPart() {
 	try {

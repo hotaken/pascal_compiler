@@ -65,6 +65,9 @@ private:
 	
 	void varPart();
 	void varDeclaration();
+
+	void typePart();
+	void typeDeclaration();
 	void type();
 
 	void statementPart();

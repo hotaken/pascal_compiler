@@ -1,8 +1,11 @@
 <program> ::= program <identifier>;<block>.|<block>.
-<block> ::= <varPart> <statementPart>
+<block> ::= <typePart> <varPart> <statementPart>
 
 <varPart>::= <empty> | var <varDeclaration>; {<varDeclaration>;}
 <varDeclaration> ::= <identifier> {,<identifier>} : <type>
+
+<typePart> ::= <empty> | type <typeDeclaration>; {<typeDeclaration>;}
+<typeDeclaration> ::=  <identifier> = <type>
 <type> ::= <identifier>
 
 <empty> ::=
