@@ -10,7 +10,7 @@ class Reader {
 public:
 	Reader(istream& stream);
 	~Reader();
-	pair<char, pair<int, int>> getCh();
+	tuple<char, int, int> getCh();
 private:
 	istream& stream;
 	int line, index;

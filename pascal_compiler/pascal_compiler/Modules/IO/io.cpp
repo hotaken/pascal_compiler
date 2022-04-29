@@ -4,10 +4,10 @@ Reader::Reader(istream& stream) : stream(stream), line(0), index(0) {}
 
 Reader::~Reader() {}
 
-pair<char, pair<int, int>> Reader::getCh() {
+tuple<char, int, int> Reader::getCh() {
 	char newch = stream.get();
 
-	pair<char, pair<int, int>> res = { newch, {line, index} };
+	tuple<char, int, int> res = { newch, line, index };
 
 	if (newch == '\n') {
 		line++;
