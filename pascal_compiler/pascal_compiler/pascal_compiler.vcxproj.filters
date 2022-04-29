@@ -42,6 +42,12 @@
     <ClCompile Include="Modules\CParser\Neutralization.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\CParser\CScope.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\CParser\SemType.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\IO\io.h">
@@ -65,11 +71,18 @@
     <ClInclude Include="Modules\CParser\CParser.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="Modules\CParser\CScope.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\CParser\SemType.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="tests\1.pas" />
     <None Include="tests\lexer_errors.pas" />
     <None Include="tests\parser_noerr.pas" />
     <None Include="tests\parser_witherr.pas" />
+    <None Include="tests\semantic_errors.pas" />
   </ItemGroup>
 </Project>

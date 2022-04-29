@@ -4,6 +4,8 @@ CParser::CParser(CLexer* lexer, Writer* writer) {
 	this->lexer.reset(lexer);
 	this->writer.reset(writer);
 	token.reset(this->lexer->getNextToken().release());
+
+	scope = make_unique<CScope>();
 }
 
 void CParser::getNextToken() {
@@ -30,32 +32,37 @@ bool CParser::isConst() {
 	return token->getType() == TokenType::ttConst;
 }
 
-void CParser::passIdent() {
+shared_ptr<CIdentToken> CParser::passIdent() {
 	auto [line, index] = token->getPos();
 	if (!isIdent())
 		throw CError(ErrorCode::UnexpectedToken, line, index, tokenTypeToString.at(token->getType()));
+	auto identToken = dynamic_pointer_cast<CIdentToken>(token);
 	getNextToken();
+	return identToken;
 }
 
-void CParser::passKeyword(CKeyWords keyWord) {
+ shared_ptr<CKeyWordToken> CParser::passKeyword(CKeyWords keyWord) {
 	auto [line, index] = token->getPos();
 	if (!isKeyWord())
 		throw CError(ErrorCode::UnexpectedToken, line, index, tokenTypeToString.at(token->getType()));
 	if (getTokenKeyWord() != keyWord)
 		throw CError(ErrorCode::ExpectedToken, line, index, keyWordsToString.at(keyWord));
-
+	auto keywordToken = dynamic_pointer_cast<CKeyWordToken>(token);
 	getNextToken();
+	return keywordToken;
 }
 
-void CParser::passConst(VariantType variantType) {
+ shared_ptr<CConstToken> CParser::passConst(VariantType variantType) {
 	auto [line, index] = token->getPos();
 	if (!isConst())
 		throw CError(ErrorCode::UnexpectedToken, line, index, tokenTypeToString.at(token->getType()));
-	VariantType tokenVariantType = dynamic_pointer_cast<CConstToken>(token)->getVariant()->getVariantType();
+	shared_ptr<CConstToken> constToken = std::dynamic_pointer_cast<CConstToken>(token);
+	VariantType tokenVariantType = constToken->getVariant()->getVariantType();
 	if (tokenVariantType != variantType)
 		throw CError(ErrorCode::UnexpectedConstType, line, index, variantTypeToString.at(tokenVariantType));
 
 	getNextToken();
+	return constToken;
 }
 
 
@@ -69,7 +76,7 @@ void CParser::program() {
 	try {
 		if (isKeyWord() && getTokenKeyWord() == CKeyWords::programSy) {
 			passKeyword(CKeyWords::programSy);
-			passIdent();
+			auto ident = passIdent();
 			passKeyword(CKeyWords::semicolonSy);
 		}
 	}
@@ -96,8 +103,11 @@ void CParser::block() {
 	}
 	statementPart();
 }
-void CParser::type() {
-	passIdent();
+shared_ptr<CIdentToken> CParser::type() {
+	auto [line, index] = token->getPos();
+	if (!token)
+		throw CError(ErrorCode::UnexpectedToken, line, index, "eof");
+	return passIdent();
 }
 
 void CParser::typePart() {
@@ -115,9 +125,25 @@ void CParser::typePart() {
 }
 
 void CParser::typeDeclaration() {
-	passIdent();
+	auto [line, index] = token->getPos();
+	auto ident = passIdent();
 	passKeyword(CKeyWords::eqSy);
-	type();
+	auto typeIdent = type();
+	if (scope->identDefined(ident->getName())) {
+		writer->stream << "Error: " << line << ":" << index << " " << static_cast<int>(ErrorCode::IdentAlreadyDefined) <<
+			" " << errorMessage.at(ErrorCode::IdentAlreadyDefined) << endl;
+	}
+	else {
+		if (!scope->typeDefined(typeIdent->getName())) {
+			writer->stream << "Error: " << line << ":" << index << " " << static_cast<int>(ErrorCode::IdentNotDefined) <<
+				" " << errorMessage.at(ErrorCode::IdentNotDefined) << endl;
+		}
+		else {
+			auto typeOfType = scope->getTypeforType(typeIdent->getName());
+			scope->addType(ident->getName(), typeOfType);
+		}
+	}
+	
 }
 
 
@@ -138,9 +164,11 @@ void CParser::varPart() {
 
 void CParser::varDeclaration() {
 	try {
+		auto [line, index] = token->getPos();
 		bool isVarDeclaration = true;
+		vector<shared_ptr<CIdentToken>> identVec;
 		while (isVarDeclaration) {
-			passIdent();
+			identVec.push_back(passIdent());
 			if (!isKeyWord()) {
 				auto [line, index] = token->getPos();
 				throw CError(ErrorCode::UnexpectedToken, line, index, tokenTypeToString.at(token->getType()));
@@ -153,7 +181,22 @@ void CParser::varDeclaration() {
 				isVarDeclaration = false;
 			}
 		}
-		type();
+		auto typeIdent = type();
+		if (!scope->typeDefined(typeIdent->getName())) {
+			writer->stream << "Error: " << line << ":" << index << " " << static_cast<int>(ErrorCode::IdentNotDefined) <<
+				" " << errorMessage.at(ErrorCode::IdentNotDefined) << endl;
+		}
+		else {
+			for (auto ident : identVec) {
+				if (scope->identDefined(ident->getName())) {
+					writer->stream << "Error: " << line << ":" << index << " " << to_string(static_cast<int>(ErrorCode::IdentAlreadyDefined)) <<
+						" " << errorMessage.at(ErrorCode::IdentAlreadyDefined) << endl;
+				}
+				else {
+					scope->addIdent(ident->getName(), typeIdent->getName());
+				}
+			}
+		}
 	}
 	catch (CError& e) {
 		writer->stream << "Error: " << e.what() << endl;
@@ -166,6 +209,8 @@ void CParser::statementPart() {
 }
 
 void CParser::compoundStatement() {
+	if (!token)
+		return;
 	passKeyword(CKeyWords::beginSy);
 
 	statement();
@@ -197,55 +242,159 @@ void CParser::statement() {
 }
 
 void CParser::simpleStatement() {
-	passIdent();
+	auto [line, index] = token->getPos();
+	auto ident = passIdent();
+	SemType identType;
+	if (!scope->identDefined(ident->getName())) {
+		writer->stream << "Error: " << line << ":" << index << " " << static_cast<int>(ErrorCode::IdentNotDefined) <<
+			" " << errorMessage.at(ErrorCode::IdentNotDefined) << " " << ident->getName() << endl;
+		identType =  SemType::stError;
+	}
+	else {
+		identType = scope->getIdentType(ident->getName());
+	}
 	passKeyword(CKeyWords::assignSy);
-	expression();
+
+
+	SemType exprType = expression();
+	if (!checkSemTypes(identType, exprType)) {
+		writer->stream << "Error: " << line << ":" << index << " " << static_cast<int>(ErrorCode::TypeMismatch) <<
+			" " << errorMessage.at(ErrorCode::TypeMismatch) << endl;
+	}
 }
 
-void CParser::expression() {
-	simpleExpression();
+SemType CParser::expression() {
+	auto [line, index] = token->getPos();
+	SemType leftType = simpleExpression();
 	if (isKeyWord() && relationOperators.contains(getTokenKeyWord())) {
 		passKeyword(getTokenKeyWord());
-		simpleExpression();
+		SemType rightType = simpleExpression();
+		if (!checkSemTypes(leftType, rightType)) {
+			writer->stream << "Error: " << line << ":" << index << " " << static_cast<int>(ErrorCode::TypeMismatch) <<
+				" " << errorMessage.at(ErrorCode::TypeMismatch) << endl;
+		}
+		if (leftType != SemType::stError)
+			leftType = rightType;
 	}
+	return leftType;
 }
 
-void CParser::simpleExpression() {
-	term();
+SemType CParser::simpleExpression() {
+	auto [line, index] = token->getPos();
+	SemType leftType = term();
 	while (isKeyWord() && addingOperators.contains(getTokenKeyWord())) {
+		auto op = getTokenKeyWord();
 		passKeyword(getTokenKeyWord());
-		term();
+		SemType rightType = term();
+		if (!checkSemTypes(leftType, rightType)) {
+			writer->stream << "Error: " << line << ":" << index << " " << static_cast<int>(ErrorCode::TypeMismatch) <<
+				" " << errorMessage.at(ErrorCode::TypeMismatch) << endl;
+			leftType = SemType::stError;
+		}
+		else {
+			if (op == CKeyWords::minusSy) {
+				if (leftType == SemType::stString) {
+					writer->stream << "Error: " << line << ":" << index << " " << static_cast<int>(ErrorCode::TypeMismatch) <<
+						" " << errorMessage.at(ErrorCode::TypeMismatch) << endl;
+					leftType = SemType::stError;
+				}
+				else {
+					leftType = rightType;
+				}
+			}
+			if (op == CKeyWords::plusSy) {
+				leftType = rightType;
+			}
+			if (op == CKeyWords::orSy) {
+				if (leftType == SemType::stString) {
+					writer->stream << "Error: " << line << ":" << index << " " << static_cast<int>(ErrorCode::TypeMismatch) <<
+						" " << errorMessage.at(ErrorCode::TypeMismatch) << endl;
+					leftType =SemType::stError;
+				}
+				else {
+					leftType = rightType;
+				}
+			}
+		}
 	}
+	return leftType;
 }
 
-void CParser::term() {
-	factor();
+SemType CParser::term() {
+	auto [line, index] = token->getPos();
+	SemType leftType = factor();
 	while (isKeyWord() && multiplyingOperators.contains(getTokenKeyWord())) {
+		auto op = getTokenKeyWord();
 		passKeyword(getTokenKeyWord());
-		factor();
+		SemType rightType = factor();
+
+		if (!checkSemTypes(leftType, rightType)) {
+			writer->stream << "Error: " << line << ":" << index << " " << static_cast<int>(ErrorCode::TypeMismatch) <<
+				" " << errorMessage.at(ErrorCode::TypeMismatch) << endl;
+			leftType = SemType::stError;
+		}
+		else {
+			if (op == CKeyWords::multiplySy) {
+				if (leftType == SemType::stString) {
+					writer->stream << "Error: " << line << ":" << index << " " << static_cast<int>(ErrorCode::TypeMismatch) <<
+						" " << errorMessage.at(ErrorCode::TypeMismatch) << endl;
+					leftType = SemType::stError;
+				}
+				else {
+					leftType = rightType;
+				}
+			}
+			if (op == CKeyWords::divisionSy) {
+				if (leftType == SemType::stString) {
+					writer->stream << "Error: " << line << ":" << index << " " << static_cast<int>(ErrorCode::TypeMismatch) <<
+						" " << errorMessage.at(ErrorCode::TypeMismatch) << endl;
+					leftType = SemType::stError;
+				}
+				else {
+					leftType = rightType;
+				}
+			}
+			if (op == CKeyWords::andSy) {
+				if (leftType == SemType::stString) {
+					writer->stream << "Error: " << line << ":" << index << " " << static_cast<int>(ErrorCode::TypeMismatch) <<
+						" " << errorMessage.at(ErrorCode::TypeMismatch) << endl;
+					leftType = SemType::stError;
+				}
+				else {
+					leftType = rightType;
+				}
+			}
+		}
 	}
+	return leftType;
 }
 
-void CParser::factor() {
+SemType CParser::factor() {
 	if (isConst()) {
-		passConst(getTokenVariantType());
-		return;
+		auto constToken = passConst(getTokenVariantType());
+		return variantTypeToSemType.at(constToken->getVariant()->getVariantType());
 	}
 
 	if (isIdent()) {
-		passIdent();
-		return;
+		auto [line, index] = token->getPos();
+		auto ident = passIdent();
+		if (scope->identDefined(ident->getName())) {
+			return scope->getIdentType(ident->getName());
+		}
+		writer->stream << "Error: " << line << ":" << index << " " << static_cast<int>(ErrorCode::IdentNotDefined) <<
+			" " << errorMessage.at(ErrorCode::IdentNotDefined) << " " << ident->getName() << endl;
+		return SemType::stError;
 	}
 
 	if (isKeyWord() && unaryOperators.contains(getTokenKeyWord())) {
 		passKeyword(getTokenKeyWord());
-		factor();
-		return;
+		return factor();
 	}
 
 	passKeyword(CKeyWords::leftBracketSy);
-	expression();
+	SemType expType = expression();
 	passKeyword(CKeyWords::rightBracketSy);
+	return expType;
 }
 
 void CParser::structuredStatement() {
@@ -272,7 +421,14 @@ void CParser::structuredStatement() {
 
 void CParser::ifStatement() {
 	passKeyword(CKeyWords::ifSy);
-	expression();
+	auto [line, index] = token->getPos();
+	SemType expType = expression();
+
+	if (!checkSemTypes(expType, SemType::stBoolean)) {
+		writer->stream << "Error: " << line << ":" << index << " " << static_cast<int>(ErrorCode::TypeMismatch) <<
+			" " << errorMessage.at(ErrorCode::TypeMismatch) << endl;
+	}
+
 	passKeyword(CKeyWords::thenSy);
 	statement();
 	if (isKeyWord() && getTokenKeyWord() == CKeyWords::elseSy) {
@@ -283,7 +439,13 @@ void CParser::ifStatement() {
 
 void CParser::whileStatement() {
 	passKeyword(CKeyWords::whileSy);
-	expression();
+	auto [line, index] = token->getPos();
+	SemType expType = expression();
+
+	if (!checkSemTypes(expType, SemType::stBoolean)) {
+		writer->stream << "Error: " << line << ":" << index << " " << static_cast<int>(ErrorCode::TypeMismatch) <<
+			" " << errorMessage.at(ErrorCode::TypeMismatch) << endl;
+	}
 	passKeyword(CKeyWords::doSy);
 	statement();
 }

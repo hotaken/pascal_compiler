@@ -1,6 +1,7 @@
 #pragma once
 #include "../CLexer/CLexer.h"
 #include <vector>
+#include "CScope.h"
 
 class CParser {
 public:
@@ -44,6 +45,8 @@ private:
 	shared_ptr<CToken> token;
 	unique_ptr<CLexer> lexer;
 	unique_ptr<Writer> writer;
+	
+	unique_ptr<CScope> scope;
 	void getNextToken();
 
 	void skipTo(bool, bool, vector<CKeyWords>);
@@ -56,9 +59,9 @@ private:
 	bool isIdent();
 	bool isConst();
 
-	void passKeyword(CKeyWords);
-	void passConst(VariantType);
-	void passIdent();
+	shared_ptr<CKeyWordToken> passKeyword(CKeyWords);
+	shared_ptr<CConstToken> passConst(VariantType);
+	shared_ptr<CIdentToken> passIdent();
 
 	void program();
 	void block();
@@ -68,17 +71,17 @@ private:
 
 	void typePart();
 	void typeDeclaration();
-	void type();
+	shared_ptr<CIdentToken> type();
 
 	void statementPart();
 	void compoundStatement();
 	void statement();
 	void simpleStatement();
 
-	void expression();
-	void simpleExpression();
-	void term();
-	void factor();
+	SemType expression();
+	SemType simpleExpression();
+	SemType term();
+	SemType factor();
 
 	void structuredStatement();
 	void ifStatement();
